@@ -9,9 +9,12 @@
 #include <string>
 
 struct Detection {
-    float conf, x0, y0, x1, y1;
-    size_t label;
+    float conf = 0.f, x0 = 0.f, y0 = 0.f, x1 = 1.f, y1 = 1.f;
+    size_t label = 0;
+
+    Detection() = default;
 };
+
 typedef std::vector<Detection> Detections;
 
 class Detector {
@@ -21,7 +24,7 @@ public:
     virtual void Predict(const cv::Mat &input, Detections &out_dets) = 0;
 
 
-private:
+protected:
     INetwork::Ptr net;
     NetworkOptions netOptions;
 };
