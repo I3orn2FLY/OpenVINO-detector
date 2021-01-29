@@ -7,9 +7,9 @@
 
 #include "detector.h"
 
-class YOLOV2Detector : public Detector {
+class YoloV2Detector : public Detector {
 public:
-    explicit YOLOV2Detector(const std::string &model_name);
+    explicit YoloV2Detector(const std::string &model_name);
 
     void Predict(const cv::Mat &img, Detections &out_dets) override;
 };
