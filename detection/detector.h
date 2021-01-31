@@ -21,7 +21,7 @@ class Detector {
 public:
     explicit Detector(const std::string &model_name);
 
-    virtual void Predict(const cv::Mat &input, Detections &out_dets) = 0;
+    virtual void Predict(const cv::Mat &input, Detections &out_dets);
 
 
 protected:
