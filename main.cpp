@@ -29,15 +29,5 @@ int main() {
 //        std::cout << "\rSpeed in ms:" << spend.count();
 //        std::flush(std::cout);
 
-        for (const auto &det:dets) {
-//            auto p0 = cv::Point2f{det.x0 * frame.cols, det.y0 * frame.rows};
-//            auto p1 = cv::Point2f{det.x1 * frame.cols, det.y1 * frame.rows};
-
-            auto p0 = cv::Point2f{det.x0, det.y0};
-            auto p1 = cv::Point2f{det.x1, det.y1};
-            cv::rectangle(frame, p0, p1, {0, 255, 255}, 2);
-        }
-        cv::imshow("Window", frame);
-        cv::waitKey(0);
     }
 }

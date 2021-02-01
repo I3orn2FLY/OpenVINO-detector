@@ -13,6 +13,10 @@ struct Detection {
     size_t label = 0;
 
     Detection() = default;
+
+    [[nodiscard]] float intersect_area(const Detection &box) const;
+
+    [[nodiscard]] float area() const;
 };
 
 typedef std::vector<Detection> Detections;
