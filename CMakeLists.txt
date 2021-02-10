@@ -19,6 +19,7 @@ find_package(OpenCV)
 
 include_directories(${OpenCV_INCLUDE_DIRS})
 set(INCLUDE_DIRS
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/detection
         ${CMAKE_CURRENT_SOURCE_DIR}/ie
         )

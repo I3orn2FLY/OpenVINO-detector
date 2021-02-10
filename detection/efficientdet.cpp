@@ -50,29 +50,45 @@ void NMS(Detections &detections, const float &iou_threshold) {
 
 void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
     out_dets.clear();
+    auto bf0 = ST_GET_TIMESTAMP();
     cv::Mat inp;
     img.copyTo(inp);
 
     auto inp_shape = net->GetInputShape();
 
-    int new_height, new_width;
-    if (inp.rows > inp.cols) {
-        new_height = inp_shape[2];
-        new_width = int(inp.cols * (inp_shape[3] * 1.f / inp.rows));
+    int inp_h = inp_shape[2];
+    int inp_w = inp_shape[3];
+
+    auto img_w = static_cast<float>(img.cols);
+    auto img_h = static_cast<float>(img.rows);
+
+
+    int h_d, w_d;
+    if (img_w / img_h > static_cast<float>(inp_w) / static_cast<float>(inp_h)) {
+        w_d = inp_w;
+        h_d = static_cast<int>(static_cast<float>(inp_w) * (img_h / img_w));
     } else {
-        new_width = inp_shape[3];
-        new_height = int(inp.rows * (inp_shape[2] * 1.f / inp.cols));
+        h_d = inp_h;
+        w_d = static_cast<int>(static_cast<float>(inp_h) * (img_w / img_h));
     }
-    cv::resize(inp, inp, {new_width, new_height});
+    cv::resize(inp, inp, {w_d, h_d});
     cv::cvtColor(inp, inp, cv::COLOR_RGB2BGR);
 
-    cv::Mat padded(inp_shape[3], inp_shape[2], CV_8UC3);
+    cv::Mat padded(inp_h, inp_w, CV_8UC3);
     padded = 0;
 
-    inp.copyTo(padded(cv::Rect(0, 0, new_width, new_height)));
+    inp.copyTo(padded(cv::Rect(0, 0, w_d, h_d)));
 
+    auto spend_pre = ST_GET_TIMESTAMP() - bf0;
+
+    auto bf1 = ST_GET_TIMESTAMP();
     net->SetInput(padded);
     net->Predict();
+
+    auto spend_nn = ST_GET_TIMESTAMP() - bf1;
+
+
+    auto bf2 = ST_GET_TIMESTAMP();
     auto shapes = net->GetOutputShapes();
 
     std::vector<std::vector<float>> ratios = {{1.f, 1.f},
@@ -121,10 +137,10 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
                         auto ratio = ratios[r_idx];
                         float anchor_y = 4.f * scale * ratio[1] * stride_y;
                         float anchor_x = 4.f * scale * ratio[0] * stride_x;
-                        float w = exp(reg_vals[3]) * anchor_x;
                         float h = exp(reg_vals[2]) * anchor_y;
-                        float y_c = reg_vals[1] * anchor_y + (float(i) + 0.5f) * stride_y;
-                        float x_c = reg_vals[0] * anchor_x + (float(j) + 0.5f) * stride_x;
+                        float w = exp(reg_vals[3]) * anchor_x;
+                        float y_c = reg_vals[0] * anchor_y + (float(i) + 0.5f) * stride_y;
+                        float x_c = reg_vals[1] * anchor_x + (float(j) + 0.5f) * stride_x;
 
                         float x0 = std::max(x_c - w / 2, 0.f);
                         float y0 = std::max(y_c - h / 2, 0.f);
@@ -140,26 +156,32 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
         }
     }
 
+
     NMS(out_dets, 0.2);
 
 
-    float x_max = static_cast<float>(new_width) / inp_shape[3];
-    float y_max = static_cast<float>(new_height) / inp_shape[2];
+    float x_max = static_cast<float>(w_d) / static_cast<float>(inp_w);
+    float y_max = static_cast<float>(h_d) / static_cast<float>(inp_h);
     for (auto &det:out_dets) {
         det.x0 = std::max(det.x0 / x_max, 0.f);
         det.y0 = std::max(det.y0 / y_max, 0.f);
         det.x1 = std::min(det.x1 / x_max, 1.f);
         det.y1 = std::min(det.y1 / y_max, 1.f);
 
-        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
-        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
-
-//        auto p0 = cv::Point2f{det.x0, det.y0};
-//        auto p1 = cv::Point2f{det.x1, det.y1};
-        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
+//        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
+//        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
+//
+//////        auto p0 = cv::Point2f{det.x0, det.y0};
+//////        auto p1 = cv::Point2f{det.x1, det.y1};
+//        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
     }
 
-    cv::imshow("Detector Out", img);
-    cv::waitKey(0);
+    auto spend_post = ST_GET_TIMESTAMP() - bf2;
+    auto spend_ovr = ST_GET_TIMESTAMP() - bf0;
+    std::cout << "\rSpend Preprocess:" << spend_pre << "      Spend NN:" << spend_nn << "     Spend POST:" << spend_post
+              << " Spend Overall:" << spend_ovr;
+    std::flush(std::cout);
+//    cv::imshow("Detector Out", img);
+//    cv::waitKey(0);
 //    std::cout << std::endl;
 }

@@ -7,6 +7,8 @@
 
 #include "ie_network.h"
 #include <string>
+#include "Timestamp.h"
+
 
 struct Detection {
     float conf = 0.f, x0 = 0.f, y0 = 0.f, x1 = 1.f, y1 = 1.f;
