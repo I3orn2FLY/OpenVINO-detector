@@ -67,8 +67,10 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
 
     cv::Mat padded(inp_h, inp_w, CV_8UC3);
     padded = 0;
-
     inp.copyTo(padded(cv::Rect(0, 0, w_d, h_d)));
+
+//    cv::imshow("Padded", padded);
+//    cv::waitKey(0);
 
     auto spend_pre = ST_GET_TIMESTAMP() - bf0;
 
@@ -105,12 +107,6 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
         det.y0 = std::max(det.y0 / y_max, 0.f);
         det.x1 = std::min(det.x1 / x_max, 1.f);
         det.y1 = std::min(det.y1 / y_max, 1.f);
-
-        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
-        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
-//
-;
-        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
     }
 
 //    auto spend_post = ST_GET_TIMESTAMP() - bf2;
@@ -118,7 +114,13 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
 //    std::cout << "\rSpend Preprocess:" << spend_pre << "      Spend NN:" << spend_nn << "     Spend POST:" << spend_post
 //              << " Spend Overall:" << spend_ovr;
 //    std::flush(std::cout);
-    cv::imshow("Detector Out", img);
-    cv::waitKey(1);
+
+//    for (auto &det:out_dets) {
+//        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
+//        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
+//        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
+//    }
+//    cv::imshow("Detector Out", img);
+//    cv::waitKey(1);
 //    std::cout << std::endl;
 }
