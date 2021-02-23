@@ -8,11 +8,10 @@
 int main() {
     auto cap = cv::VideoCapture("../data/videos/demo.mp4");
 //    auto detector = Detector("efficientdet-post-proc");
-//    auto detector = Detector("yolov5s");
-    auto detector = Detector("efficientdet-d0_v0.0.1");
-//    auto detector = EfficientDet("efficientdet-256x512");
-//    auto detector = EfficientDet("efficientdet-d0-512x512");
-//    auto detector = EfficientDet("efficientdet-d0_v0.0.1");
+    auto detector = Detector("yolov5s");
+//    auto detector = Detector("efficientdet-d0_v0.0.1");
+//    auto detector = Detector("yolov4-csp");
+//    auto detector = EfficientDet("efficientdet-d0-c90-384x640_v0.0.1");
     cv::Mat frame;
 
     float frame_n = 0;

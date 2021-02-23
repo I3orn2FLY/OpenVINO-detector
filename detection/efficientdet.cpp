@@ -54,20 +54,20 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
     auto img_h = static_cast<float>(img.rows);
 
 
-    int h_d, w_d;
+    int scaled_h, scaled_w;
     if (img_w / img_h > static_cast<float>(inp_w) / static_cast<float>(inp_h)) {
-        w_d = inp_w;
-        h_d = static_cast<int>(static_cast<float>(inp_w) * (img_h / img_w));
+        scaled_w = inp_w;
+        scaled_h = static_cast<int>(static_cast<float>(inp_w) * (img_h / img_w));
     } else {
-        h_d = inp_h;
-        w_d = static_cast<int>(static_cast<float>(inp_h) * (img_w / img_h));
+        scaled_h = inp_h;
+        scaled_w = static_cast<int>(static_cast<float>(inp_h) * (img_w / img_h));
     }
-    cv::resize(inp, inp, {w_d, h_d});
+    cv::resize(inp, inp, {scaled_w, scaled_h});
     cv::cvtColor(inp, inp, cv::COLOR_RGB2BGR);
 
     cv::Mat padded(inp_h, inp_w, CV_8UC3);
     padded = 0;
-    inp.copyTo(padded(cv::Rect(0, 0, w_d, h_d)));
+    inp.copyTo(padded(cv::Rect(0, 0, scaled_w, scaled_h)));
 
 //    cv::imshow("Padded", padded);
 //    cv::waitKey(0);
@@ -82,17 +82,17 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
 
     auto bf2 = ST_GET_TIMESTAMP();
     auto shapes = net->GetOutputShapes();
-    size_t n_cls = 3;
+    size_t n_cls = 90;
     size_t box_reg_n = 4;
     size_t num_proposals = net->GetOutputShape(0)[1];
-    auto *reg_res = net->GetOutput(0);
-    auto *cls_res = net->GetOutput(1);
+    auto *reg_res = net->GetOutput(1);
+    auto *cls_res = net->GetOutput(0);
     for (size_t i = 0; i < num_proposals; ++i) {
         auto box = reg_res + box_reg_n * i;
         auto cls = cls_res + n_cls * i;
-        float score = std::max(cls[0], cls[1]);
-        if (score < 0.2) continue;
-        Detection det = {score, box[0] / inp_w, box[1] / inp_h, box[2] / inp_w, box[3] / inp_h};
+        auto max_score = std::max_element(cls, cls + n_cls);
+        if (*max_score < 0.2) continue;
+        Detection det = {*max_score, box[0] / inp_w, box[1] / inp_h, box[2] / inp_w, box[3] / inp_h};
         out_dets.push_back(det);
     }
 
@@ -100,8 +100,8 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
     NMS(out_dets, 0.2);
 
 
-    float x_max = static_cast<float>(w_d) / static_cast<float>(inp_w);
-    float y_max = static_cast<float>(h_d) / static_cast<float>(inp_h);
+    float x_max = static_cast<float>(scaled_w) / static_cast<float>(inp_w);
+    float y_max = static_cast<float>(scaled_h) / static_cast<float>(inp_h);
     for (auto &det:out_dets) {
         det.x0 = std::max(det.x0 / x_max, 0.f);
         det.y0 = std::max(det.y0 / y_max, 0.f);
@@ -109,18 +109,18 @@ void EfficientDet::Predict(const cv::Mat &img, Detections &out_dets) {
         det.y1 = std::min(det.y1 / y_max, 1.f);
     }
 
-//    auto spend_post = ST_GET_TIMESTAMP() - bf2;
-//    auto spend_ovr = ST_GET_TIMESTAMP() - bf0;
+    auto spend_post = ST_GET_TIMESTAMP() - bf2;
+    auto spend_ovr = ST_GET_TIMESTAMP() - bf0;
 //    std::cout << "\rSpend Preprocess:" << spend_pre << "      Spend NN:" << spend_nn << "     Spend POST:" << spend_post
 //              << " Spend Overall:" << spend_ovr;
 //    std::flush(std::cout);
 
-//    for (auto &det:out_dets) {
-//        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
-//        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
-//        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
-//    }
-//    cv::imshow("Detector Out", img);
-//    cv::waitKey(1);
+    for (auto &det:out_dets) {
+        auto p0 = cv::Point2f{det.x0 * img.cols, det.y0 * img.rows};
+        auto p1 = cv::Point2f{det.x1 * img.cols, det.y1 * img.rows};
+        cv::rectangle(img, p0, p1, {0, 255, 255}, 2);
+    }
+    cv::imshow("Detector Out", img);
+    cv::waitKey(1);
 //    std::cout << std::endl;
 }
